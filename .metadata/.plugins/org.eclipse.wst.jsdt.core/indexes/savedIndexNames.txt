@@ -1,0 +1,8 @@
+INDEX VERSION 1.4+D:\SemanticWeb\FromSchemaToOWL\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
+1411253511.index
+946483519.index
+1888161898.index
+2186892950.index
+2474436180.index
+1351894981.index
+3855888156.index

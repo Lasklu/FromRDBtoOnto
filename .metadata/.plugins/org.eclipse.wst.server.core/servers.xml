@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<servers>
+  <server hostname="localhost" id="Aperçu HTTP @ localhost" name="Aperçu HTTP @ localhost" runtime-id="Aperçu HTTP" server-type="org.eclipse.wst.server.preview.server" server-type-id="org.eclipse.wst.server.preview.server" start-timeout="240" stop-timeout="240" timestamp="1">
+    <list key="modules" value0="com.java-ws.ontologie::org.eclipse.wst.web.internal.deployables.static:com.java-ws.ontologie::wst.web::1.0"/>
+  </server>
+</servers>

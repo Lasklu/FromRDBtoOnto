@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copier l’élément « movielens.ttl » dans « morph-r2rml-rdb/src/main/scala »&#x0D;&#x0A;- Projet d&apos;origine : &apos;r2rml-parser&apos;&#x0D;&#x0A;- Elément de destination : &apos;morph-r2rml-rdb/src/main/scala&apos;&#x0D;&#x0A;- Elément d&apos;origine : &apos;movielens.ttl&apos;" description="Copier le fichier" destination="=morph-r2rml-rdb/src\/main\/scala" element1="dspace/movielens.ttl" files="1" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1585765714825" units="0" version="1.0"/>
+</session>

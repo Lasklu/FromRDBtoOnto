@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Exemple
+Bundle-SymbolicName: com.java-ws.owlapi.exemple
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: JAVA-WS
+Automatic-Module-Name: com.java-ws.owlapi.exemple
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: com.java-ws.owlapi;bundle-version="1.0.0",
+ com.java-ws.pellet;bundle-version="1.0.0"

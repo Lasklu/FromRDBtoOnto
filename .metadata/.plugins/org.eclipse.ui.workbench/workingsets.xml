@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workingSetManager>
+<workingSet editPageId="org.eclipse.ui.resourceWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1585762040286_1" label="morph-rdb" name="morph-rdb">
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-r2rml-rdb-querytranslator" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-rdb-dist" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-base" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-r2rml-rdb" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-r2rml" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-rdb" type="4"/>
+<item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-base-querytranslator" type="4"/>
+</workingSet>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1568707326103_0" label="Fenêtre Jeu de documents" name="Aggregate for window 1568707326103"/>
+</workingSetManager>

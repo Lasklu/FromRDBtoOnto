@@ -1,0 +1,58 @@
+package com.exemple.test;
+
+import java.io.File;
+import java.util.Set;
+
+import org.coode.owlapi.turtle.TurtleOntologyFormat;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.formats.RDFXMLOntologyFormat;
+import org.semanticweb.owlapi.io.StreamDocumentTarget;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLOntologyStorageException;
+import org.semanticweb.owlapi.util.InferredOntologyGenerator;
+
+import com.clarkparsia.owlapi.explanation.SingleExplanationGenerator;
+import com.clarkparsia.owlapi.explanation.SingleExplanationGeneratorImpl;
+import com.clarkparsia.pellet.owlapiv3.PelletReasoner;
+import com.clarkparsia.pellet.owlapiv3.PelletReasonerFactory;
+
+import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
+
+
+public class OntologyLoad {
+	
+	public static void main(String args[]) throws OWLOntologyCreationException, OWLOntologyStorageException {
+		
+		String WORLD = "file:///C:/Users/hp/Desktop/WorldOnto/E-commerce/ecom/ecommerceOntologyF.ttl";
+		IRI worldIRI = IRI.create(WORLD);
+		
+		OWLOntologyManager manager = OWLManager.createOWLOntologyManager(); 
+		OWLOntology worldOntology  = manager.loadOntology(worldIRI);
+		System.out.println(worldOntology);
+		
+		manager.saveOntology(worldOntology,new RDFXMLOntologyFormat(),
+				new StreamDocumentTarget(System.out));
+		
+		
+	
+		// Now we have check if our ontology is consistent 
+		PelletReasoner reasoner = PelletReasonerFactory.getInstance().createNonBufferingReasoner(worldOntology);
+		manager.addOntologyChangeListener(reasoner);
+		System.out.println("the ontology is consistent: "+reasoner.isConsistent());
+		
+		//OWLOntology infOnt = manager.createOntology();
+		//InferredOntologyGenerator iog = new InferredOntologyGenerator(reasoner);
+		
+		//iog.fillOntology(manager, infOnt);
+		
+		
+		//manager.saveOntology(infOnt,new RDFXMLOntologyFormat(),
+				//new StreamDocumentTarget(System.out));
+
+	}
+
+}

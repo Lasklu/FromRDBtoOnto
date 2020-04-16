@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Déplacer l’élément « TableComponent.java » dans « com.java-ws.owlapi.exemple/src/com.database.bean »&#x0D;&#x0A;- Projet d&apos;origine : &apos;com.java-ws.owlapi.exemple&apos;&#x0D;&#x0A;- Elément de destination : &apos;com.java-ws.owlapi.exemple/src/com.database.bean&apos;&#x0D;&#x0A;- Elément d&apos;origine : &apos;TableComponent.java&apos;&#x0D;&#x0A;- Mettre à jour les références d&apos;un élément restructuré" description="Déplacer l&apos;unité de compilation" destination="/src&lt;com.database.bean" element1="/src&lt;{TableComponent.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.move" policy="org.eclipse.jdt.ui.moveResources" qualified="false" references="true" stamp="1568800580224" units="1" version="1.0"/>
+</session>
