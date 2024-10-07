@@ -31,12 +31,12 @@ public class MyConnection {
     static{
          db_url="jdbc:postgresql://localhost";
         db_port = "5432";
-        db_name="test";
+        //db_name="test";
         db_user="lukaslaskowski";
         db_password="(Sakul22";
     }
     
-    public static Connection getConnections()
+    public static Connection getConnections(String db_name)
     {
         try{
              String url = "" + db_url + ":" + db_port + "/" + db_name + "";

@@ -1,4 +1,5 @@
 package com.database.metadata;
+import java.util.List;
 
 public class D2RQClassMap {
     
@@ -6,6 +7,8 @@ public class D2RQClassMap {
     private String _class;
     private String name;
     private String prefix;
+    private String subClassOf;
+    private List<String> join;
     
     // Constructor with parameters
     public D2RQClassMap(String id, String _class, String name, String prefix) {
@@ -13,6 +16,22 @@ public class D2RQClassMap {
         this._class = _class;
         this.name = name;
         this.prefix = prefix;
+    }
+    
+    public void addSubClass(String name) {
+    	this.subClassOf = name;
+    }
+    
+    public void addJoin(List<String> join) {
+    	this.join = join;
+    }
+    
+    public List<String> getJoin() {
+    	return join;
+    }
+    
+    public String getSubClassOf() {
+    	return subClassOf;
     }
 
     // Getter for id

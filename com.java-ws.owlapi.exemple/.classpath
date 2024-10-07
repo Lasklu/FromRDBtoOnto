@@ -6,7 +6,7 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="**/.DS_Store" kind="src" path="src"/>
 	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/owlapi-api-5.5.0.jar"/>
 	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/commons-rdf-api-0.5.0.jar"/>
 	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/mysql-connector-j-8.0.31.jar"/>
