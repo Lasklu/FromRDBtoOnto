@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <dirs>
-<entry loc="C:\Program Files\Java\jre1.8.0_192" stamp="1547379188681"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home" stamp="1713352503000"/>
+    <entry loc="C:\Program Files\Java\jre1.8.0_192" stamp="1547379188681"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home" stamp="1706532270464"/>
+    <entry loc="/Library/Java/JavaVirtualMachines/jdk-11.jdk/Contents/Home" stamp="1694599908000"/>
 </dirs>

@@ -51,16 +51,10 @@ public class TestPellet {
 		
 		iog.fillOntology(manager, inferOntology);
 		
-		System.out.println("#######Resultat aprés les inférences#####");
+		System.out.println("#######Resultat aprï¿½s les infï¿½rences#####");
 		
 		manager.saveOntology(inferOntology, new TurtleOntologyFormat(),
-				new StreamDocumentTarget(System.out));
-		
-		
-		
-		
-		
-		
+				new StreamDocumentTarget(System.out));	
 	}
 
 }

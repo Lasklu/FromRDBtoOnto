@@ -9,5 +9,8 @@
 <item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-rdb" type="4"/>
 <item factoryID="org.eclipse.ui.internal.model.ResourceFactory" path="/morph-base-querytranslator" type="4"/>
 </workingSet>
+<workingSet editPageId="org.eclipse.jdt.internal.ui.DynamicSourcesWorkingSet" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1724336385738_2" label="Java Main Sources" name="Java Main Sources"/>
+<workingSet editPageId="org.eclipse.jdt.internal.ui.DynamicSourcesWorkingSet" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1724336385740_3" label="Java Test Sources" name="Java Test Sources"/>
 <workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1568707326103_0" label="Fenêtre Jeu de documents" name="Aggregate for window 1568707326103"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1724336386054_4" label="Window Working Set" name="Aggregate for window 1724336386054"/>
 </workingSetManager>

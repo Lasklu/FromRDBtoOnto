@@ -1,0 +1,739 @@
+package com.database.metadata;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.coode.owlapi.turtle.TurtleOntologyFormat;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.StreamDocumentTarget;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLDataCardinalityRestriction;
+import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLDataMaxCardinality;
+import org.semanticweb.owlapi.model.OWLDataMinCardinality;
+import org.semanticweb.owlapi.model.OWLDataProperty;
+import org.semanticweb.owlapi.model.OWLDataPropertyDomainAxiom;
+import org.semanticweb.owlapi.model.OWLDataPropertyRangeAxiom;
+import org.semanticweb.owlapi.model.OWLDatatype;
+import org.semanticweb.owlapi.model.OWLDeclarationAxiom;
+import org.semanticweb.owlapi.model.OWLEntity;
+import org.semanticweb.owlapi.model.OWLFunctionalObjectPropertyAxiom;
+import org.semanticweb.owlapi.model.OWLInverseFunctionalObjectPropertyAxiom;
+import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
+import org.semanticweb.owlapi.model.OWLObjectCardinalityRestriction;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
+import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyCreationException;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLOntologyStorageException;
+import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
+import org.semanticweb.owlapi.model.OWLSymmetricObjectPropertyAxiom;
+import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
+import org.semanticweb.owlapi.reasoner.ConsoleProgressMonitor;
+import org.semanticweb.owlapi.reasoner.OWLReasonerConfiguration;
+import org.semanticweb.owlapi.reasoner.SimpleConfiguration;
+import org.semanticweb.owlapi.vocab.OWL2Datatype;
+
+import com.database.bean.TableComponent;
+import com.database.model.MyConnection;
+
+public class DataBaseMetadataExtraction {
+
+	private static Connection cnx;
+	
+	static {
+		 cnx = MyConnection.getConnections();
+	}
+	public static ArrayList<String> getTables() throws SQLException{
+		ArrayList<String> arrTables = new ArrayList<String> ();
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"});
+		while(resultSet.next()) {
+			String tableName = resultSet.getString("TABLE_NAME");
+			arrTables.add(tableName);
+		}
+		return arrTables;
+	}
+	
+	public static ArrayList<TableComponent> getColumnsOfSpecifiedTable(String tblName) throws SQLException {
+		ArrayList<TableComponent> tblCol = new ArrayList<TableComponent>();
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet columns=databaseMetaData.getColumns(null, null,tblName, null);
+		
+		while(columns.next()){
+			String columnName= columns.getString("COLUMN_NAME");
+			String columnNameCapFirst = columnName.toUpperCase().charAt(0)+columnName.substring(1,columnName.length());
+			String isNullable = columns.getString("IS_NULLABLE");
+			String dataType=columns.getString("TYPE_NAME");
+			TableComponent cmp = new TableComponent(columnNameCapFirst, dataType,isNullable);
+			tblCol.add(cmp);
+		}
+		return tblCol;
+	}
+	
+	public static boolean isUnique(String tblName,String colName) throws SQLException{
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet rs = databaseMetaData.getIndexInfo(null, null, tblName, false, false);
+		while (rs.next()) {
+			String col = rs.getString(9);
+			String columnNameCapFirst = col.toUpperCase().charAt(0)+col.substring(1,col.length());
+			
+			if (columnNameCapFirst.equals(colName)) 
+                return true;
+	      }
+		
+		return false;
+	}
+	
+	
+	private static  ArrayList<String> getAllPrimaryKeyFromSpecifiedTable (String tblName) throws SQLException {
+		 ArrayList<String> pKeys = new ArrayList<String>();
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(null,null,tblName);
+		while(primaryKeys.next()) {
+			pKeys.add(primaryKeys.getString("COLUMN_NAME"));
+		}
+		
+		return pKeys;
+	}
+	public static ArrayList<String> listAllPrimaryKeysOfSpecifiedTable(String tblName) throws SQLException {
+	
+				return getAllPrimaryKeyFromSpecifiedTable (tblName);
+		
+	}
+	
+	public static int getNumberOfPrimaryKey(String tblName) throws SQLException {
+		int numberOfPrimaryKeys = 0;
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet primaryKeys = databaseMetaData.getPrimaryKeys(null,null,tblName);
+		while(primaryKeys.next()) {
+			numberOfPrimaryKeys++;
+		}
+		
+		return numberOfPrimaryKeys;
+	}
+	public static boolean isPrimaryKey(String colName, String tblName) throws SQLException {
+		 ArrayList<String> pKeys = getAllPrimaryKeyFromSpecifiedTable (tblName);
+		 for(int i=0 ; i<pKeys.size();i++) {
+			String col=pKeys.get(i); 
+			String colCap= col.toUpperCase().charAt(0)+col.substring(1,col.length());
+			 if(!colCap.equals(colName)) 
+				 return false;
+		 }
+		return true ;
+	}
+	
+	public static boolean isPrimaryKeyComposite(String tblName) throws SQLException {
+		
+		if(getNumberOfPrimaryKey(tblName)==1) return false;
+		
+		return true ; 
+	}
+	
+
+	
+	
+	public static ArrayList<String> getAllForeignKeys(String tblName) throws SQLException {
+		
+		ArrayList<String> forKeys = new ArrayList<String>();
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet foreignKeys = databaseMetaData.getImportedKeys(null,null,tblName);
+		
+		while (foreignKeys.next()) {
+			String fKeys = foreignKeys.getString("FKCOLUMN_NAME");
+			String fkNameCapFirst = fKeys.toUpperCase().charAt(0)+fKeys.substring(1,fKeys.length());
+			forKeys.add(fKeys);
+			
+		}
+		
+		return forKeys;
+	}
+		
+		
+	
+	public static boolean isForeignKey(String tblName, String colName) throws SQLException {
+		
+		ArrayList<String> forKeys = getAllForeignKeys(tblName);
+		for(int i=0;i<forKeys.size();i++) {
+			String fk =  forKeys.get(i);
+			String capFk = fk.toUpperCase().charAt(0)+fk.substring(1,fk.length());
+			if(colName.equals(capFk)) return true;
+		}
+		
+		return false;
+	}
+	
+	public static String getParentTable(String tblName) throws SQLException {
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet foreignKeys = databaseMetaData.getImportedKeys(null,null,tblName);
+		
+		while (foreignKeys.next()) return foreignKeys.getString("PKTABLE_NAME");
+		
+		return " ";
+	}
+	
+	public static ArrayList<String> getParentTables(String tblName) throws SQLException{
+		ArrayList<String> fKeys = new ArrayList<String>();
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet foreignKeys = databaseMetaData.getImportedKeys(null,null,tblName);
+		
+		while (foreignKeys.next()) fKeys.add(foreignKeys.getString("PKTABLE_NAME"));
+		return fKeys;  
+	}
+	
+	public static String getChildTable(String tblName) throws SQLException {
+		
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet foreignKeys = databaseMetaData.getImportedKeys(null,null,tblName);
+		while (foreignKeys.next()) return foreignKeys.getString("FKTABLE_NAME");
+		return " ";
+	}
+	
+	
+	public static int getNumberOfForeignKeys(String tblName) throws SQLException
+	{
+		int nbForeignKeys=0;
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet foreignKeys = databaseMetaData.getImportedKeys(null,null,tblName);
+			 while(foreignKeys.next()) {
+				 nbForeignKeys++;
+			 }
+
+		return nbForeignKeys;
+	}
+
+	public static int  getNumberOfColumns(String tblName) throws SQLException
+	{
+		int nbColumns=0;
+		DatabaseMetaData meta =cnx.getMetaData();
+		ResultSet columns = meta.getColumns(null,null,tblName, null);
+
+		while (columns.next()) nbColumns++;
+	   return nbColumns;
+			
+	}
+	
+	public static  ArrayList<String> getAllColumns(String tblName) throws SQLException{
+		ArrayList<String> allCols = new ArrayList<String>();
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet columns=databaseMetaData.getColumns(null, null,tblName, null);
+		while(columns.next()) {
+			allCols.add(columns.getString("COLUMN_NAME"));
+		}
+		
+		return allCols;
+	}
+	
+	public static boolean isAssociativeTable(String tblName) throws SQLException {
+		int num =0;
+		ArrayList<String> pKeys= getAllPrimaryKeyFromSpecifiedTable(tblName);
+		if((getNumberOfPrimaryKey(tblName)==2) && (getNumberOfForeignKeys(tblName)==2) ) {
+			for(int i=0; i<pKeys.size();i++){
+				String col=pKeys.get(i); 
+				String colCap= col.toUpperCase().charAt(0)+col.substring(1,col.length());
+				if(isForeignKey(tblName, colCap)) num++;
+			}
+			System.out.println("num = "+ num);
+			if(num==2) return true;
+		}
+		return false;
+	}
+	
+	
+	 private static String cascadeOptionToString(int option) {
+		 switch (option) {
+		 case DatabaseMetaData.importedKeyCascade:
+			   return "CASCADE";
+		 case DatabaseMetaData.importedKeySetNull:
+			   return "SET NULL";
+		 case DatabaseMetaData.importedKeyRestrict:
+			 return "RESTRICT";
+	     case DatabaseMetaData.importedKeyNoAction:
+	    	 return "NO ACTION";
+	   }
+		 
+		 return "SET DEFAULT";
+	    }
+	
+	
+	public static String foreingKeyCrossReference(String parentTable,String foreignTable) throws SQLException {
+		DatabaseMetaData databaseMetaData = cnx.getMetaData();
+		ResultSet rs = databaseMetaData.getCrossReference(null, null, parentTable, null, null, foreignTable);
+		String deleteAction=null;
+		while(rs.next()) {
+			 deleteAction = cascadeOptionToString(rs.getInt("DELETE_RULE"));
+		}
+		return deleteAction;
+	}
+
+	
+	public static void main(String args[]) throws SQLException, OWLOntologyCreationException, OWLOntologyStorageException {
+		ArrayList<TableComponent> cp;
+		ArrayList<TableComponent> cp1;
+		ArrayList<String> pKeys;
+		Set<OWLAxiom> axioms = new HashSet<OWLAxiom>();
+		OWLDatatype dataType=null;
+		
+		
+		
+		OWLOntologyManager manager = OWLOntologyManager.createOWLOntologyManager();
+		IRI ontologyIRI = IRI.create("http://java-ws.com/ontologie/myFamily.owl");
+		OWLDataFactory factory=manager.getOWLDataFactory();
+		OWLOntology ontology = manager.createOntology(ontologyIRI);
+		
+		ArrayList<String> arrTables = getTables();
+		for(int i=0; i<arrTables.size();i++) {
+			System.out.println("isAssociatif- "+arrTables.get(i)+" : "+isAssociativeTable(arrTables.get(i)));
+			System.out.println("Table Name: "+arrTables.get(i));
+			OWLClass person = factory.getOWLClass(IRI.create(ontologyIRI+"#"+arrTables.get(i)));
+			OWLDeclarationAxiom personDeclarationAxiom = factory.getOWLDeclarationAxiom((OWLEntity) person);
+			 
+			cp= getColumnsOfSpecifiedTable(arrTables.get(i));
+
+			for(int j=0; j<cp.size();j++){
+				
+				if((!isPrimaryKey(cp.get(j).getColName(), arrTables.get(i))) && 
+						((cp.get(j).getNullable().equals("YES"))) &&(!isUnique(arrTables.get(i),cp.get(j).getColName()))) {
+				
+					OWLDataProperty dataproperty = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+					if(cp.get(j).getDataType().equals("INT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("SMALLINT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("ENUM"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(j).getDataType().equals("VARCHAR")) dataType = factory.getRDFPlainLiteral();
+					if(cp.get(j).getDataType().equals("DATE"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+					if(cp.get(j).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+					if(cp.get(j).getDataType().equals("DECIMAL")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+					if(cp.get(j).getDataType().equals("FLOAT"))   dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+					if(cp.get(j).getDataType().equals("DOUBLE"))  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+					if(cp.get(j).getDataType().equals("CHAR")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(j).getDataType().equals("SMALLINT UNSIGNED"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					
+					OWLDataPropertyRangeAxiom range = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+					OWLDataPropertyDomainAxiom domain = factory.getOWLDataPropertyDomainAxiom(dataproperty, person);
+					axioms.add(range);
+					axioms.add(domain);
+
+				}
+				
+					
+				
+				 if((cp.get(j).getNullable().equals("NO")) && (!isPrimaryKey(cp.get(j).getColName(), arrTables.get(i)))&&
+						 (!isUnique(arrTables.get(i),cp.get(j).getColName()))) {
+		
+					 OWLDataProperty dataproperty = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+						if(cp.get(j).getDataType().equals("INT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("SMALLINT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("ENUM"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("VARCHAR")) dataType = factory.getRDFPlainLiteral();
+						if(cp.get(j).getDataType().equals("DATE"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+						if(cp.get(j).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+						if(cp.get(j).getDataType().equals("DECIMAL")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+						if(cp.get(j).getDataType().equals("FLOAT"))   dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+						if(cp.get(j).getDataType().equals("DOUBLE"))  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+						if(cp.get(j).getDataType().equals("CHAR"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("SMALLINT UNSIGNED"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						
+						OWLDataPropertyRangeAxiom range = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+						OWLDataPropertyDomainAxiom domain = factory.getOWLDataPropertyDomainAxiom(dataproperty, person);
+						axioms.add(range);
+						axioms.add(domain);
+					 
+					OWLDataMinCardinality minCardinality = factory.getOWLDataMinCardinality(1, dataproperty);
+					OWLSubClassOfAxiom axiom= factory.getOWLSubClassOfAxiom(person, minCardinality);				  
+					manager.addAxiom(ontology, axiom);
+			}
+				 
+					
+				 
+			if(isUnique(arrTables.get(i),cp.get(j).getColName()) && (cp.get(j).getNullable().equals("YES"))&&
+						 (!isPrimaryKey(cp.get(j).getColName(), arrTables.get(i))) ) {
+					 OWLDataProperty dataproperty = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+						if(cp.get(j).getDataType().equals("INT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("SMALLINT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("ENUM"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("VARCHAR")) dataType = factory.getRDFPlainLiteral();
+						if(cp.get(j).getDataType().equals("DATE"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+						if(cp.get(j).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+						if(cp.get(j).getDataType().equals("DECIMAL")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+						if(cp.get(j).getDataType().equals("FLOAT"))   dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+						if(cp.get(j).getDataType().equals("DOUBLE"))  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+						if(cp.get(j).getDataType().equals("CHAR")) 	  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("SMALLINT UNSIGNED"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						
+						OWLDataPropertyRangeAxiom range = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+						OWLDataPropertyDomainAxiom domain = factory.getOWLDataPropertyDomainAxiom(dataproperty, person);
+						axioms.add(range);
+						axioms.add(domain);
+					 
+					OWLDataMaxCardinality maxCardinality = factory.getOWLDataMaxCardinality(1, dataproperty);
+					OWLSubClassOfAxiom axiom= factory.getOWLSubClassOfAxiom(person, maxCardinality);
+					manager.addAxiom(ontology, axiom);
+		 }	 
+			
+			
+		
+			if(!isPrimaryKeyComposite(arrTables.get(i))) {
+				if(isPrimaryKey(cp.get(j).getColName(), arrTables.get(i))) {
+					
+					OWLDataProperty dataproperty = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+					if(cp.get(j).getDataType().equals("INT"))     		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("SMALLINT"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("SMALLINT UNSIGNED"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(j).getDataType().equals("ENUM"))     		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(j).getDataType().equals("VARCHAR")) dataType = factory.getRDFPlainLiteral();
+					if(cp.get(j).getDataType().equals("DATE"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+					if(cp.get(j).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+					if(cp.get(j).getDataType().equals("DECIMAL")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+					if(cp.get(j).getDataType().equals("FLOAT"))   dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+					if(cp.get(j).getDataType().equals("DOUBLE"))  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+					if(cp.get(j).getDataType().equals("CHAR")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					
+	
+					OWLDataPropertyRangeAxiom range = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+					
+					OWLDataPropertyDomainAxiom domain = factory.getOWLDataPropertyDomainAxiom(dataproperty, person);
+					axioms.add(range);
+					axioms.add(domain);
+					
+					OWLDataCardinalityRestriction card = factory.getOWLDataExactCardinality(1, dataproperty);
+					OWLSubClassOfAxiom axiom= factory.getOWLSubClassOfAxiom(person, card);
+					manager.addAxiom(ontology, axiom);
+					manager.addAxioms(ontology, axioms);
+				}
+			}	
+		
+			if(isPrimaryKeyComposite(arrTables.get(i)) && (!isAssociativeTable(arrTables.get(i))) &&
+					getNumberOfForeignKeys(arrTables.get(i))==0) {
+				Set<OWLAxiom> axioms1 = new HashSet<OWLAxiom>();
+				Set<OWLAxiom> axioms2 = new HashSet<OWLAxiom>();
+				ArrayList<String> p= listAllPrimaryKeysOfSpecifiedTable(arrTables.get(i));
+				OWLClass cmpClass = factory.getOWLClass(IRI.create(ontologyIRI+"#pk_Class"+arrTables.get(i)));
+				OWLDeclarationAxiom cmpClassDeclarationAxiom = factory.getOWLDeclarationAxiom((OWLEntity) cmpClass);
+				manager.addAxiom(ontology, cmpClassDeclarationAxiom);
+				for(int k =0 ;k<p.size();k++) {
+					//Each column of primary key has cmp_class for its domain
+					OWLDataProperty dataproperty   = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+p.get(k)));
+					if(cp.get(k).getDataType().equals("INT"))     		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(k).getDataType().equals("SMALLINT"))    	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(k).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					if(cp.get(k).getDataType().equals("ENUM"))     		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(k).getDataType().equals("VARCHAR")) 		dataType = factory.getRDFPlainLiteral();
+					if(cp.get(k).getDataType().equals("DATE"))    		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+					if(cp.get(k).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+					if(cp.get(k).getDataType().equals("DECIMAL"))		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+					if(cp.get(k).getDataType().equals("FLOAT"))  		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+					if(cp.get(k).getDataType().equals("DOUBLE")) 		dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+					if(cp.get(k).getDataType().equals("CHAR")) 			dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+					if(cp.get(k).getDataType().equals("SMALLINT UNSIGNED"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+					OWLDataPropertyRangeAxiom range1 = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+					OWLDataPropertyDomainAxiom domain1 = factory.getOWLDataPropertyDomainAxiom(dataproperty, cmpClass);
+					axioms1.add(range1);
+					axioms1.add(domain1);
+					
+					
+					
+					OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#hasPkClassOP"+arrTables.get(i)));
+					OWLObjectPropertyRangeAxiom range2 = factory.getOWLObjectPropertyRangeAxiom(objectProperty, cmpClass);
+					OWLObjectPropertyDomainAxiom domain2 = factory.getOWLObjectPropertyDomainAxiom(objectProperty, person);
+					OWLInverseFunctionalObjectPropertyAxiom invAxiom = factory.getOWLInverseFunctionalObjectPropertyAxiom(objectProperty);
+					
+					OWLDataMinCardinality minCardinality = factory.getOWLDataMinCardinality(1, dataproperty);
+					OWLSubClassOfAxiom axiom= factory.getOWLSubClassOfAxiom(person, minCardinality);
+					manager.addAxiom(ontology, axiom);
+					
+					axioms2.add(range2);
+					axioms2.add(domain2);
+					
+					manager.addAxioms(ontology, axioms1);
+					manager.addAxioms(ontology, axioms2);
+					manager.addAxiom(ontology, invAxiom);
+				} 
+			 }
+			
+			//Scenario1 pour FK: FK is simple Colmun (not a primary key)
+			
+			if(!isPrimaryKeyComposite(arrTables.get(i))) {
+				if((!isPrimaryKey(cp.get(j).getColName(), arrTables.get(i))) && (isForeignKey(arrTables.get(i), cp.get(j).getColName()))){
+					System.out.println("Scenario1 pour FK: FK is simple Colmun (not a primary key)");
+					System.out.println("The col Name: "+ cp.get(j).getColName());
+					Set<OWLAxiom> axiomsA = new HashSet<OWLAxiom>();
+					
+					OWLClass parentClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getParentTable(arrTables.get(i))));
+					OWLClass childClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getChildTable(arrTables.get(i))));
+					
+					OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+					OWLObjectPropertyDomainAxiom domain = factory.getOWLObjectPropertyDomainAxiom(objectProperty, childClass);
+					OWLObjectPropertyRangeAxiom range = factory.getOWLObjectPropertyRangeAxiom(objectProperty, parentClass);
+					
+					axiomsA.add(domain);
+					axiomsA.add(range);
+					manager.addAxioms(ontology, axiomsA);
+				}
+			}
+			
+			
+			//Scenario2 pour FK: FK is part of primary key
+			if(isPrimaryKeyComposite(arrTables.get(i)) && (getNumberOfPrimaryKey(arrTables.get(i))>getNumberOfForeignKeys(arrTables.get(i))) ) {
+				
+				System.out.println("Scenario2 pour FK: FK is part of primary key");
+				Set<OWLAxiom> axiomsB = new HashSet<OWLAxiom>();
+				ArrayList<String> p= listAllPrimaryKeysOfSpecifiedTable(arrTables.get(i));
+				for(int k =0;k<p.size();k++) {
+					if(isForeignKey(arrTables.get(i), cp.get(j).getColName())) {
+						System.out.println("Bilal");
+						OWLClass parentClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getParentTable(arrTables.get(i))));
+						OWLClass childClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getChildTable(arrTables.get(i))));
+						
+						OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+						OWLObjectPropertyDomainAxiom domain = factory.getOWLObjectPropertyDomainAxiom(objectProperty, childClass);
+						OWLObjectPropertyRangeAxiom range = factory.getOWLObjectPropertyRangeAxiom(objectProperty, parentClass);
+						OWLFunctionalObjectPropertyAxiom axiom = factory.getOWLFunctionalObjectPropertyAxiom(objectProperty);
+						
+						axiomsB.add(range);
+						axiomsB.add(domain);
+						manager.addAxioms(ontology, axiomsB);
+						manager.addAxiom(ontology, axiom);	
+					}
+					
+					else {
+						
+						OWLClass cl = factory.getOWLClass(IRI.create(ontologyIRI+"#"+arrTables.get(i)));
+						OWLDeclarationAxiom clDeclarationAxiom = factory.getOWLDeclarationAxiom((OWLEntity) person);
+						
+						OWLDataProperty dataproperty = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+cp.get(j).getColName()));
+						if(cp.get(j).getDataType().equals("INT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("SMALLINT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+						if(cp.get(j).getDataType().equals("ENUM"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("VARCHAR")) dataType = factory.getRDFPlainLiteral();
+						if(cp.get(j).getDataType().equals("CHAR")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+						if(cp.get(j).getDataType().equals("DATE"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+						if(cp.get(j).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+						if(cp.get(j).getDataType().equals("DECIMAL")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+						if(cp.get(j).getDataType().equals("FLOAT"))   dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+						if(cp.get(j).getDataType().equals("DOUBLE"))  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+						
+						OWLDataPropertyRangeAxiom range = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+						OWLDataPropertyDomainAxiom domain = factory.getOWLDataPropertyDomainAxiom(dataproperty, cl);
+						axioms.add(range);
+						axioms.add(domain);
+					 
+					OWLDataMinCardinality minCardinality = factory.getOWLDataMinCardinality(1, dataproperty);
+					OWLSubClassOfAxiom axiom= factory.getOWLSubClassOfAxiom(person, minCardinality);	
+					manager.addAxiom(ontology, clDeclarationAxiom);
+					manager.addAxiom(ontology, axiom);
+						
+					}
+				}
+			}
+			
+			//Scenario3: Many-to-Many Relationship (primary key is the full foreign key)
+			if(isPrimaryKeyComposite(arrTables.get(i)) && isAssociativeTable(arrTables.get(i)) && ((getNumberOfPrimaryKey(arrTables.get(i))==2)&&(getNumberOfForeignKeys(arrTables.get(i))==2) && 
+					getNumberOfColumns(arrTables.get(i))==2)) {
+				Set<OWLAxiom> axiomsC = new HashSet<OWLAxiom>();
+				System.out.println("Scenario3: Many-to-Many Relationship (primary key is the full foreign key)");
+				ArrayList<String> p= listAllPrimaryKeysOfSpecifiedTable(arrTables.get(i));
+				ArrayList<String> fk = getParentTables(arrTables.get(i));
+				for(int k =0;k<p.size();k++) {
+					String col=p.get(k); 
+					String colCap= col.toUpperCase().charAt(0)+col.substring(1,col.length());
+					if(isForeignKey(arrTables.get(i),colCap)) {
+						System.out.println("Many-to-Many Scenario: Two Objetc Properties will be created in this case");
+						
+						for(int l =0;k<fk.size();l++) {
+							
+							OWLClass parentClass 	= 	factory.getOWLClass(IRI.create(ontologyIRI+"#"+fk.get(l)));
+							OWLClass childClass 	= 	factory.getOWLClass(IRI.create(ontologyIRI+"#"+fk.get(l+1)));
+							
+							String col1=fk.get(l); 
+							String colCap1= col1.toUpperCase().charAt(0)+col1.substring(1,col1.length());
+							String col2=fk.get(l+1); 
+							String colCap2= col2.toUpperCase().charAt(0)+col2.substring(1,col2.length());
+							
+							System.out.println("coco");
+							OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#has"+colCap1+""+colCap2));
+							System.out.println("Object Property:"+objectProperty);
+							OWLObjectPropertyDomainAxiom domain = factory.getOWLObjectPropertyDomainAxiom(objectProperty, parentClass);
+							OWLObjectPropertyRangeAxiom range = factory.getOWLObjectPropertyRangeAxiom(objectProperty, childClass);
+							
+						
+							OWLObjectProperty objectProperty1 = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#has"+colCap2+""+colCap1));
+							OWLInverseObjectPropertiesAxiom invObjAxiom= factory.getOWLInverseObjectPropertiesAxiom(objectProperty1, objectProperty);
+							
+							axiomsC.add(range);
+							axiomsC.add(domain);
+							manager.addAxioms(ontology, axiomsC);
+							manager.addAxiom(ontology, invObjAxiom);
+							break;
+						}
+					}
+				
+				}
+			}
+			
+			//Scenario4: Many-to-Many with attribute Relationship (primary key is the full foreign key)
+			if(isPrimaryKeyComposite(arrTables.get(i)) && isAssociativeTable(arrTables.get(i)) && ((getNumberOfPrimaryKey(arrTables.get(i))==2)&&(getNumberOfForeignKeys(arrTables.get(i))==2))) {
+				Set<OWLAxiom> axiomsD = new HashSet<OWLAxiom>();
+				ArrayList<String> p= listAllPrimaryKeysOfSpecifiedTable(arrTables.get(i));
+				ArrayList<String> cols = getAllColumns(arrTables.get(i));
+				ArrayList<TableComponent> cp2= getColumnsOfSpecifiedTable(arrTables.get(i));
+				
+				if(getNumberOfColumns(arrTables.get(i))>2) {
+				 System.out.println("HI");
+					OWLClass relationshipClass 	= factory.getOWLClass(IRI.create(ontologyIRI+"#"+arrTables.get(i)));
+					
+					for(int l=0 ; l<cp2.size();l++) {
+						
+						if(!isForeignKey(arrTables.get(i), cp2.get(l).getColName())){
+							
+							OWLDataProperty dataproperty = factory.getOWLDataProperty(IRI.create(ontologyIRI+"#has"+cp.get(l).getColName())); 
+							
+							if(cp.get(l).getDataType().equals("INT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+							if(cp.get(l).getDataType().equals("SMALLINT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+							if(cp.get(l).getDataType().equals("INT UNSIGNED"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+							if(cp.get(l).getDataType().equals("ENUM"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+							if(cp.get(j).getDataType().equals("TEXT"))     dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+							if(cp.get(l).getDataType().equals("VARCHAR")) dataType = factory.getRDFPlainLiteral();
+							if(cp.get(l).getDataType().equals("DATE"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+							if(cp.get(l).getDataType().equals("DATETIME"))    dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DATE_TIME.getIRI());
+							if(cp.get(l).getDataType().equals("DECIMAL")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DECIMAL.getIRI());
+							if(cp.get(l).getDataType().equals("FLOAT"))   dataType = factory.getOWLDatatype(OWL2Datatype.XSD_FLOAT.getIRI());
+							if(cp.get(l).getDataType().equals("DOUBLE"))  dataType = factory.getOWLDatatype(OWL2Datatype.XSD_DOUBLE.getIRI());
+							if(cp.get(l).getDataType().equals("CHAR")) dataType = factory.getOWLDatatype(OWL2Datatype.XSD_STRING.getIRI());
+							if(cp.get(l).getDataType().equals("SMALLINT UNSIGNED"))     	dataType = factory.getOWLDatatype(OWL2Datatype.XSD_INTEGER.getIRI());
+							OWLDataPropertyRangeAxiom range = factory.getOWLDataPropertyRangeAxiom(dataproperty,dataType);
+							OWLDataPropertyDomainAxiom domain = factory.getOWLDataPropertyDomainAxiom(dataproperty, relationshipClass);
+							axiomsD.add(range);
+							axiomsD.add(domain);
+							
+							manager.addAxioms(ontology, axiomsD);
+						}
+						
+						if(isForeignKey(arrTables.get(i), cp2.get(l).getColName())) 
+						{
+							OWLClass parentClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getParentTable(arrTables.get(i))));
+							OWLClass childClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getChildTable(arrTables.get(i))));
+							OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#has"+cp.get(l).getColName()));
+							OWLObjectPropertyDomainAxiom domain = factory.getOWLObjectPropertyDomainAxiom(objectProperty, parentClass);
+							OWLObjectPropertyRangeAxiom range = factory.getOWLObjectPropertyRangeAxiom(objectProperty, childClass);
+							OWLObjectCardinalityRestriction card = factory.getOWLObjectExactCardinality(1, objectProperty);
+							OWLSubClassOfAxiom axiom= factory.getOWLSubClassOfAxiom(parentClass, card);
+							OWLObjectProperty objectProperty1 = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"#is"+cp.get(l).getColName()+"Of"));
+							OWLInverseObjectPropertiesAxiom invObjAxiom= factory.getOWLInverseObjectPropertiesAxiom(objectProperty1, objectProperty);
+							axiomsD.add(range);
+							axiomsD.add(domain);
+							manager.addAxioms(ontology, axiomsD);
+							manager.addAxiom(ontology, axiom);
+							manager.addAxiom(ontology, invObjAxiom);
+							
+							
+						}		
+					}
+				}
+				
+				//Scenario5: The foreign key is the same primary key (Inheritance) 
+				
+				if(!isPrimaryKeyComposite(arrTables.get(i))) {
+					
+					if(isPrimaryKey(cp.get(j).getColName(), arrTables.get(i)) && isForeignKey(arrTables.get(i), cp.get(j).getColName())) {
+						
+						System.out.println("Scenario5: The foreign key is the same primary key (Inheritance) ");
+						String parentTable = getParentTable(arrTables.get(i));
+						String childTable = getChildTable(arrTables.get(i));
+						
+						OWLClass parentClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+parentTable));
+						OWLClass childClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+childTable));
+						OWLSubClassOfAxiom childClassisKindOfParentClass = factory.getOWLSubClassOfAxiom(childClass, parentClass);
+						manager.addAxiom(ontology, childClassisKindOfParentClass);
+						
+					}
+				}
+				
+				//Scenario6: the child and parent table for the FK are the same (Symmetric)
+				if(isPrimaryKeyComposite(arrTables.get(i))) {
+					System.out.println("Sys:"+arrTables.get(i));
+					if(isForeignKey(arrTables.get(i), cp.get(j).getColName()) && getChildTable(arrTables.get(i)).equals(getParentTable(arrTables.get(i)))) {
+						System.out.println("Scenario6: the child and parent table for the FK are the same (Symmetric)");
+						Set<OWLAxiom> axiomsE = new HashSet<OWLAxiom>();
+						OWLClass parentClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getParentTable(arrTables.get(i))));
+						OWLClass childClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getChildTable(arrTables.get(i))));
+						
+						OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"has"+cp.get(j).getColName()));
+						OWLObjectPropertyDomainAxiom domain = factory.getOWLObjectPropertyDomainAxiom(objectProperty, parentClass);
+						OWLObjectPropertyRangeAxiom range = factory.getOWLObjectPropertyRangeAxiom(objectProperty, childClass);
+						
+						OWLSymmetricObjectPropertyAxiom symAxiom = factory.getOWLSymmetricObjectPropertyAxiom(objectProperty);
+						
+						axiomsE.add(range);
+						axiomsE.add(domain);
+						
+						manager.addAxioms(ontology, axiomsE);
+						manager.addAxiom(ontology, symAxiom);
+					}
+				}
+				//Scenario7: On delete Cascade Transitivite
+				
+				if(!isPrimaryKeyComposite(arrTables.get(i))){
+					String kindOfAction = foreingKeyCrossReference(getParentTable(arrTables.get(i)) , getChildTable(arrTables.get(i)));
+					if(kindOfAction.equals("CASCADE")) {
+					 if(isForeignKey(arrTables.get(i), cp.get(j).getColName()) && getChildTable(arrTables.get(i)).equals(getParentTable(arrTables.get(i)))) {
+						 
+						Set<OWLAxiom> axiomsF = new HashSet<OWLAxiom>();
+						OWLClass parentClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getParentTable(arrTables.get(i))));
+						OWLClass childClass = factory.getOWLClass(IRI.create(ontologyIRI+"#"+getChildTable(arrTables.get(i))));
+						OWLObjectProperty objectProperty = factory.getOWLObjectProperty(IRI.create(ontologyIRI+"sub"+cp.get(j).getColName()));
+						OWLObjectPropertyDomainAxiom domain = factory.getOWLObjectPropertyDomainAxiom(objectProperty, parentClass);
+						OWLObjectPropertyRangeAxiom range = factory.getOWLObjectPropertyRangeAxiom(objectProperty, childClass);
+						
+						OWLTransitiveObjectPropertyAxiom trAxiom = factory.getOWLTransitiveObjectPropertyAxiom(objectProperty);
+						
+						axiomsF.add(range);
+						axiomsF.add(domain);
+						manager.addAxioms(ontology, axiomsF);
+						manager.addAxiom(ontology, trAxiom);		
+					}
+				}
+					
+					//scenario8: ternary relationship 
+			}		
+		}
+	  }
+			manager.addAxiom(ontology, personDeclarationAxiom);
+			manager.addAxioms(ontology, axioms);
+			
+			 
+			
+		}
+		manager.saveOntology(ontology,new TurtleOntologyFormat(),
+				new StreamDocumentTarget(System.out));
+		ConsoleProgressMonitor progressMonitor = new ConsoleProgressMonitor();
+		OWLReasonerConfiguration config = new SimpleConfiguration(progressMonitor);
+		
+		
+		
+		//Scenario 15: il faut nettoyer data 
+		 
+		
+		
+
+	}
+}

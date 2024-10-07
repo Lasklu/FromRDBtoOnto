@@ -29,11 +29,11 @@ public class MyConnection {
     }
     
     static{
-         db_url="jdbc:mysql://localhost";
-        db_port = "3306";
-        db_name="movielens";
-        db_user="root";
-        db_password="lamiae";
+         db_url="jdbc:postgresql://localhost";
+        db_port = "5432";
+        db_name="test";
+        db_user="lukaslaskowski";
+        db_password="(Sakul22";
     }
     
     public static Connection getConnections()
@@ -46,7 +46,7 @@ public class MyConnection {
                     {
                         if(connection==null)
                         {
-                                Class.forName("com.mysql.jdbc.Driver");
+                                Class.forName("org.postgresql.Driver");
                                  connection = DriverManager.getConnection(url, db_user, db_password); 
                                  
                         }      
@@ -54,6 +54,7 @@ public class MyConnection {
                     
                     
                 }
+                System.out.println(connection);
                    return connection;
         }
         catch(Exception e){

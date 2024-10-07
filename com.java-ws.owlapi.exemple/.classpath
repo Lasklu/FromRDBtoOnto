@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/hp/Desktop/SWProject/mysql-connector-java-5.1.44.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/owlapi-api-5.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/commons-rdf-api-0.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/mysql-connector-j-8.0.31.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/owlapi-distribution-5.5.0.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/slf4j-api-2.0.16.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/slf4j-simple-2.0.16.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/javax.inject-1.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/caffeine-3.1.8.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/eclipse-rdf4j-5.0.2-onejar.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/hppc-0.10.0.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/hppcrt-0.7.5.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/guava-33.3.0-jre.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/postgresql-42.7.3.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/jackson-0.9.2.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/jackson-annotations-2.18.0.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/jackson-core-2.18.0.jar"/>
+	<classpathentry kind="lib" path="/Users/lukaslaskowski/Downloads/jackson-databind-2.18.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
